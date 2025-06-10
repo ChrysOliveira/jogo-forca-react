@@ -17,6 +17,14 @@ async function initializeDatabase() {
   `);
 
   await db.exec(`
+    CREATE TABLE IF NOT EXISTS words (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      word TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS answers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       question_id INTEGER NOT NULL,
@@ -59,7 +67,9 @@ async function initializeDatabase() {
       FOREIGN KEY (question_id) REFERENCES questions (id)
     );
   `);
+
   const questionCount = await db.get('SELECT COUNT(*) as count FROM questions');
+
   if (questionCount.count === 0) {
     const questions = [
       {
@@ -164,3 +174,4 @@ async function initializeDatabase() {
 }
 
 export default initializeDatabase;
+

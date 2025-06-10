@@ -16,10 +16,10 @@ export const SocketProvider = ({ children }) => {
     //Você pode mudar para o IP da sua máquina na rede local
     const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
     
-    const socketConnection = io(SERVER_URL, {
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 10000
+      const socketConnection = io(SERVER_URL, {
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 10000
     });
 
     socketConnection.on('connect', () => {
