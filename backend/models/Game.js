@@ -6,12 +6,13 @@ class Game {
     this.id = id;
     this.players = [];
     this.started = false;
-    this.currentQuestion = 0;
-    this.questions = [];
-    this.results = [];
-    this.playerAnswers = [];
-    this.questionStartTime = null;
-    this.db = db; //Referência ao banco de dados
+    this.currentRound = 0;
+    this.words = [];
+    this.roundWinners = [];
+    this.guessedLetters = new Set();
+    this.wrongGuesses = 0;
+    this.maxWrong = 6;
+    this.db = db;
   }
 
   //Adicionar um jogador ao jogo

@@ -17,6 +17,31 @@ class DatabaseManager {
     }
   }
 
+  async getRandomWords(limit = 5, categorias = null){
+     try {
+      let sql = `
+        SELECT id, palavra, dica, categoria
+        FROM palavras_forca
+      `;
+      const params = [];
+
+      if (Array.isArray(categorias) && categorias.length > 0) {
+        const placeholders = categorias.map(() => '?').join(', ');
+        sql += ` WHERE categoria IN (${placeholders})`;
+        params.push(...categorias);
+      }
+
+      sql += ` ORDER BY RANDOM() LIMIT ?`;
+      params.push(limit);
+
+      const words = await this.db.all(sql, params);
+      return words;
+    } catch (error) {
+      console.error('Error fetching hangman words:', error);
+      throw error;
+    }
+  }
+
   //Buscar perguntas aleatórias do banco de dados
   async getRandomQuestions(limit = 5) {
     try {
