@@ -61,81 +61,96 @@ class Game {
     }
   }
 
-  //Iniciar o jogo com as perguntas fornecidas
-  startGame(questions) {
-    this.questions = questions;
+  //Iniciar o jogo com as palavras fornecidas
+  startGame(words) {
+    this.words = words;
     this.started = true;
-    this.currentQuestion = 0;
-    this.results = [];
+    this.currentRound = 0;
+    this.roundWinners = [];
+    this._initRound();
     return true;
   }
 
-  //Obter a pergunta atual
-  getCurrentQuestion() {
-    if (!this.started || this.questions.length === 0) {
-      return null;
-    }
-    
-    const currentQ = this.questions[this.currentQuestion];
-    
-    //Retornar versão sem a resposta correta
+  _initRound() {
+    this.guessedLetters.clear();
+    this.wrongGuesses = 0;
+  }
+
+  getCurrentState() {
+    if (!this.started || !this.words[this.currentRound]) return null;
+
+    const { palavra, dica, categoria } = this.words[this.currentRound];
+    // monta a string com underscores e letras já chutadas
+    const display = palavra
+      .split('')
+      .map(ch => (ch === ' ' ? ' ' : (this.guessedLetters.has(ch) ? ch : '_')))
+      .join('');
+
     return {
-      id: currentQ.id,
-      question: currentQ.question,
-      answers: currentQ.answers,
-      questionNumber: this.currentQuestion + 1,
-      totalQuestions: this.questions.length
+      round: this.currentRound + 1,
+      totalRounds: this.words.length,
+      hint: dica,
+      category: categoria,
+      displayWord: display,
+      wrongGuesses: this.wrongGuesses,
+      maxWrong: this.maxWrong,
+      guessedLetters: Array.from(this.guessedLetters)
     };
   }
 
   //Registrar resposta de um jogador
-  async submitAnswer(socket, answer, questionId) {
-    try {
-      const currentQuestion = this.questions[this.currentQuestion];
-      if (currentQuestion.id !== questionId) {
-        return { error: 'ID de pergunta inválido' };
-      }
-      
-      const player = this.players.find(p => p.socketId === socket.id);
-      if (!player) {
-        return { error: 'Jogador não encontrado no jogo' };
-      }
-      
-      //Calcular tempo de resposta
-      const responseTime = Date.now() - this.questionStartTime;
-      
-      //Verificar se a resposta está correta
-      const isCorrect = answer === currentQuestion.correct_answer;
-      
-      //Salvar a resposta do jogador
-      const playerAnswer = {
-        playerId: player.id,
-        playerName: player.name,
-        answer,
-        isCorrect,
-        responseTime,
-        points: 0 //Pontos serão atualizados depois
-      };
-      
-      this.playerAnswers.push(playerAnswer);
-        
-      //Salvar a resposta no banco de dados
-      await this.db.run(
-        'INSERT INTO player_answers (player_id, question_id, answer, is_correct, response_time, points) VALUES (?, ?, ?, ?, ?, ?)',
-        player.id, questionId, answer || '', isCorrect ? 1 : 0, responseTime, 0 
-      );
-      
-      //Verificar se todos os jogadores responderam
-      const allPlayersAnswered = this.playerAnswers.length === this.players.length;
-      
-      return { 
-        received: true, 
-        allPlayersAnswered 
-      };
-    } catch (error) {
-      console.error('Erro ao enviar resposta:', error);
-      throw error;
+  async guessLetter(socket, letter) {
+    letter = letter.toUpperCase();
+    if (this.guessedLetters.has(letter)) {
+      return { error: 'Letra já chutada' };
     }
+    this.guessedLetters.add(letter);
+
+    const palavra = this.words[this.currentRound].palavra;
+    if (!palavra.includes(letter)) {
+      this.wrongGuesses++;
+    }
+
+    // Verifica vitória ou derrota do round
+    const isWon = palavra
+      .split('')
+      .every(ch => ch === ' ' || this.guessedLetters.has(ch));
+    const isLost = this.wrongGuesses >= this.maxWrong;
+
+    let roundResult = null;
+    if (isWon || isLost) {
+      // registra vencedor (no empate de derrota, ninguém ganha o ponto)
+      if (isWon) {
+        const player = this.players.find(p => p.socketId === socket.id);
+        this.roundWinners.push(player?.id || null);
+        player?.addPoints(1);
+      } else {
+        this.roundWinners.push(null);
+      }
+
+      roundResult = {
+        won: isWon,
+        fullWord: palavra
+      };
+    }
+
+    return {
+      state: this.getCurrentState(),
+      roundResult
+    };
+  }
+
+  nextRound() {
+    if (!this.started) 
+      return null;
+    
+    this.currentRound++;
+
+    if (this.currentRound < this.words.length) {
+      this._initRound();
+      return this.getCurrentState();
+    }
+    return null;
   }
 
   //Calcular pontuações quando todos responderam
@@ -185,20 +200,6 @@ class Game {
       console.error('Error calculating scores:', error);
       throw error;
     }
-  }
-
-  //Avançar para a próxima pergunta
-  nextQuestion() {
-    this.currentQuestion++;
-    this.playerAnswers = [];
-    this.questionStartTime = Date.now();
-    
-    //Verificar se ainda há perguntas
-    if (this.currentQuestion < this.questions.length) {
-      return this.getCurrentQuestion();
-    }
-    
-    return null; //Não há mais perguntas, jogo acabou
   }
 
   //Finalizar o jogo e retornar resultados finais

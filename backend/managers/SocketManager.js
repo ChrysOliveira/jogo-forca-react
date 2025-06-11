@@ -23,7 +23,7 @@ class SocketManager {
       socket.on('start_game', () => this.handleStartGame(socket));
 
       //Usuário envia resposta
-      socket.on('submit_answer', (data) => this.handleSubmitAnswer(socket, data));
+      socket.on('guess_letter', (data) => this.handleSubmitAnswer(socket, data));
       
       //Desconexão
       socket.on('disconnect', () => this.handleDisconnect(socket));
@@ -78,7 +78,7 @@ class SocketManager {
   }
 
   //Tratamento do evento 'start_game'
-  async handleStartGame(socket) {
+  async handleStartGame(socket, {limit = 5, categorias = null}) {
     try {
       const gameId = this.socketToGameMap.get(socket.id);
       
@@ -101,19 +101,19 @@ class SocketManager {
       }
       
       //Buscar perguntas do banco de dados
-      const questions = await this.databaseManager.getRandomQuestions(5);
+      const palavras = await this.databaseManager.getRandomWords(limit, categorias);
       
       //Iniciar o jogo
-      game.startGame(questions);
+      game.startGame(palavras);
       
       //Iniciar a contagem regressiva
       this.io.to(`game:${gameId}`).emit('game_starting', { countdown: 3 });
       
       //Após a contagem regressiva, enviar a primeira pergunta
       setTimeout(() => {
-        const questionData = game.startQuestion();
+        const state = game.getCurrentState();
         
-        this.io.to(`game:${gameId}`).emit('question', questionData);
+        this.io.to(`game:${gameId}`).emit('forca_state', state);
       }, 3000);
       
     } catch (error) {
@@ -122,61 +122,36 @@ class SocketManager {
     }
   }
 
-  //Tratamento do evento 'submit_answer'
-  async handleSubmitAnswer(socket, { answer, questionId }) {
-    try {
-      const gameId = this.socketToGameMap.get(socket.id);
+  async handleGuessLetter(socket, { letter }) {
+    const gameId = this.socketToGameMap.get(socket.id);
       
-      if (!gameId) {
-        socket.emit('error', { message: 'Você não faz parte de nenhum jogo' });
-        return;
-      }
-      
-      const game = this.activeGames.get(gameId);
-      
-      if (!game || !game.started) {
-        socket.emit('error', { message: 'Jogo não encontrado ou não iniciado' });
-        return;
-      }
+    if (!gameId) {
+      socket.emit('error', { message: 'Você não faz parte de nenhum jogo' });
+      return;
+    }
+    
+    const game = this.activeGames.get(gameId);
+    
+    if (!game || !game.started) {
+      socket.emit('error', { message: 'Jogo não encontrado ou não iniciado' });
+      return;
+    }
 
-      //Registrar a resposta do jogador
-      const result = await game.submitAnswer(socket, answer, questionId);
-      
-      if (result.error) {
-        socket.emit('error', { message: result.error });
-        return;
-      }
-      
-      //Enviar confirmação ao jogador
-      socket.emit('answer_received', { received: true });
-      
-      //Se todos os jogadores responderam, processar resultados
-      if (result.allPlayersAnswered) {
-        //Calcular pontuações
-        const results = await game.calculateScores();
-        
-        //Enviar resultados da pergunta para todos os jogadores
-        this.io.to(`game:${gameId}`).emit('question_results', {
-          ...results,
-          nextQuestionIn: 5 //segundos
-        });
-        
-        //Passar para a próxima pergunta ou finalizar o jogo após um atraso
-        setTimeout(() => {
-          const nextQuestion = game.nextQuestion();
-          
-          if (nextQuestion) {
-            //Próxima pergunta
-            this.io.to(`game:${gameId}`).emit('question', nextQuestion);
-          } else {
-            //Jogo acabou, mostrar placar final
-            this.handleGameOver(gameId, game);
-          }
-        }, 5000);
-      }
-    } catch (error) {
-      console.error('Erro ao enviar resposta:', error);
-      socket.emit('error', { message: 'Erro ao enviar resposta' });
+    const { state, roundResult } = await game.guessLetter(socket, letter);
+
+    this.io.to(`game:${gameId}`).emit('forca_state', state);
+
+    if (roundResult) {
+      this.io.to(`game:${gameId}`).emit('round_end', roundResult);
+
+      setTimeout(() => {
+        const nextState = game.nextRound();
+        if (nextState) {
+          this.io.to(`game:${gameId}`).emit('forca_state', nextState);
+        } else {
+          this.handleGameOver(gameId, game);
+        }
+      }, 3000);
     }
   }
 
