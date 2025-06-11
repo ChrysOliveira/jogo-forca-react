@@ -83,7 +83,7 @@ class SocketManager {
   }
 
   //Tratamento do evento 'start_game'
-  async handleStartGame(socket, {limit = 5, categorias = null}) {
+  async handleStartGame(socket, limit = 5, categorias = null) {
     console.log("Iniciando jogo")
     try {
       const gameId = this.socketToGameMap.get(socket.id);
@@ -109,7 +109,9 @@ class SocketManager {
       //Buscar palavras do banco de dados
       console.log("Buscando palavras aleatorias do db")
       const palavras = await this.databaseManager.getRandomWords(limit, categorias);
-      console.log(`Palavras buscadas: ${palavras}`)
+
+      const lista = palavras.map(p => p.palavra).join(', ');
+      console.log(`Palavras buscadas: ${lista}`);
       
       //Iniciar o jogo
       console.log(`Iniciando jogo ${game}`)
