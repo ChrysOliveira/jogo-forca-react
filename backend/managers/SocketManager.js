@@ -32,6 +32,9 @@ class SocketManager {
 
   //Tratamento do evento 'join_lobby'
   async handleJoinLobby(socket, { playerName }) {
+
+    console.log(`Jogador ${playerName} entrou no lobby`);
+
     try {
       let gameId;
       let game;
@@ -48,7 +51,9 @@ class SocketManager {
 
       //Se nenhum jogo ativo for encontrado, criar um novo
       if (!gameId) {
+        console.log("Criando novo jogo")
         gameId = await this.databaseManager.createGame();
+        console.log(`Jogo criado ${gameId}`)
         //Primeiro jogador torna-se o líder
         isLeader = true;
         
@@ -79,6 +84,7 @@ class SocketManager {
 
   //Tratamento do evento 'start_game'
   async handleStartGame(socket, {limit = 5, categorias = null}) {
+    console.log("Iniciando jogo")
     try {
       const gameId = this.socketToGameMap.get(socket.id);
       
@@ -100,10 +106,13 @@ class SocketManager {
         return;
       }
       
-      //Buscar perguntas do banco de dados
+      //Buscar palavras do banco de dados
+      console.log("Buscando palavras aleatorias do db")
       const palavras = await this.databaseManager.getRandomWords(limit, categorias);
+      console.log(`Palavras buscadas: ${palavras}`)
       
       //Iniciar o jogo
+      console.log(`Iniciando jogo ${game}`)
       game.startGame(palavras);
       
       //Iniciar a contagem regressiva

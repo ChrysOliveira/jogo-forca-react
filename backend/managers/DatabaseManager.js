@@ -17,11 +17,12 @@ class DatabaseManager {
     }
   }
 
+  //Buscar palavras aleatórias do banco de dados
   async getRandomWords(limit = 5, categorias = null){
      try {
       let sql = `
         SELECT id, palavra, dica, categoria
-        FROM palavras_forca
+        FROM palavras
       `;
       const params = [];
 
@@ -43,31 +44,31 @@ class DatabaseManager {
   }
 
   //Buscar perguntas aleatórias do banco de dados
-  async getRandomQuestions(limit = 5) {
-    try {
-      const questions = await this.db.all(`
-        SELECT q.id, q.question, q.correct_answer,
-               json_group_array(a.answer) as answers
-        FROM questions q
-        JOIN answers a ON q.id = a.question_id
-        GROUP BY q.id
-        ORDER BY RANDOM()
-        LIMIT ?
-      `, limit);
-      
-      //Parse da string JSON em array e embaralhamento das respostas
-      questions.forEach(q => {
-        q.answers = JSON.parse(q.answers);
-        //Embaralhar as respostas
-        q.answers = q.answers.sort(() => Math.random() - 0.5);
-      });
-      
-      return questions;
-    } catch (error) {
-      console.error('Error fetching questions:', error);
-      throw error;
-    }
-  }
+  // async getRandomQuestions(limit = 5) {
+  //   try {
+  //     const questions = await this.db.all(`
+  //       SELECT q.id, q.question, q.correct_answer,
+  //              json_group_array(a.answer) as answers
+  //       FROM questions q
+  //       JOIN answers a ON q.id = a.question_id
+  //       GROUP BY q.id
+  //       ORDER BY RANDOM()
+  //       LIMIT ?
+  //     `, limit);
+  //     
+  //     //Parse da string JSON em array e embaralhamento das respostas
+  //     questions.forEach(q => {
+  //       q.answers = JSON.parse(q.answers);
+  //       //Embaralhar as respostas
+  //       q.answers = q.answers.sort(() => Math.random() - 0.5);
+  //     });
+  //     
+  //     return questions;
+  //   } catch (error) {
+  //     console.error('Error fetching questions:', error);
+  //     throw error;
+  //   }
+  // }
 
   //Criar um novo jogo no banco de dados
   async createGame() {

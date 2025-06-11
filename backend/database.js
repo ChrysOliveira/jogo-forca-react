@@ -7,22 +7,32 @@ async function initializeDatabase() {
     driver: sqlite3.Database
   });
 
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS questions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      question TEXT NOT NULL,
-      correct_answer TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
+  // await db.exec(`
+  //   CREATE TABLE IF NOT EXISTS questions (
+  //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+  //     question TEXT NOT NULL,
+  //     correct_answer TEXT NOT NULL,
+  //     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  //   );
+  // `);
 
+  // await db.exec(`
+  //   CREATE TABLE IF NOT EXISTS answers (
+  //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+  //     question_id INTEGER NOT NULL,
+  //     answer TEXT NOT NULL,
+  //     is_correct BOOLEAN NOT NULL,
+  //     FOREIGN KEY (question_id) REFERENCES questions (id)
+  //   );
+  // `);
+  
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS answers (
+    CREATE TABLE IF NOT EXISTS palavras(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      question_id INTEGER NOT NULL,
-      answer TEXT NOT NULL,
-      is_correct BOOLEAN NOT NULL,
-      FOREIGN KEY (question_id) REFERENCES questions (id)
+      palavra TEXT NOT NULL,
+      dica TEXT NOT NULL,
+      categoria TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
@@ -50,28 +60,17 @@ async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS player_answers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       player_id INTEGER NOT NULL,
-      question_id INTEGER NOT NULL,
-      answer TEXT NOT NULL,
+      palavra_id INTEGER NOT NULL,
+      letra TEXT NOT NULL,
       is_correct BOOLEAN NOT NULL,
-      response_time INTEGER NOT NULL,
-      points INTEGER DEFAULT 0,
       FOREIGN KEY (player_id) REFERENCES players (id),
-      FOREIGN KEY (question_id) REFERENCES questions (id)
+      FOREIGN KEY (palavra_id) REFERENCES palavras (id)
     );
   `);
 
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS palavras_forca(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      palavra TEXT NOT NULL,
-      dica TEXT NOT NULL,
-      categoria TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
 
     // verifica se já tem palavras; se não, insere o seed
-  const count = await db.get('SELECT COUNT(*) as cnt FROM palavras_forca');
+  const count = await db.get('SELECT COUNT(*) as cnt FROM palavras');
   if (count.cnt === 0) {
     const palavras = [
       // —— Filmes —— 
@@ -107,7 +106,7 @@ async function initializeDatabase() {
     ];
 
     const insertStmt = await db.prepare(
-      `INSERT INTO palavras_forca (palavra, dica, categoria) VALUES (?, ?, ?)`
+      `INSERT INTO palavras (palavra, dica, categoria) VALUES (?, ?, ?)`
     );
     for (const w of palavras) {
       await insertStmt.run(w.palavra, w.dica, w.categoria);
