@@ -6,8 +6,8 @@ import { GameProvider, useGame, GAME_STATES } from './context/GameContext';
 import InitialScreen from './components/InitialScreen';
 import LobbyScreen from './components/LobbyScreen';
 import CountdownScreen from './components/CountdownScreen';
-import QuestionScreen from './components/QuestionScreen';
-import QuestionResultsScreen from './components/QuestionResultsScreen';
+import WordScreen from './components/WordScreen';
+import RoundResultsScreen from './components/QuestionResultsScreen';
 import GameOverScreen from './components/GameOverScreen';
 
 import './App.css';
@@ -32,18 +32,31 @@ const GameContent = () => {
   const renderContent = () => {
     switch (gameState) {
       case GAME_STATES.INITIAL:
+        console.log("Tela alterada para INITIAL");
         return <InitialScreen />;
+
       case GAME_STATES.LOBBY:
+        console.log("Tela alterada para LOBBY");
         return <LobbyScreen />;
+
       case GAME_STATES.COUNTDOWN:
+        console.log("Tela alterada para COUNTDOWN");
         return <CountdownScreen />;
-      case GAME_STATES.QUESTION:
-        return <QuestionScreen />;
-      case GAME_STATES.QUESTION_RESULTS:
-        return <QuestionResultsScreen />;
+
+      case GAME_STATES.WORD:
+        console.log("Tela alterada para WORD");
+        return <WordScreen />;
+
+      case GAME_STATES.ROUND_RESULTS:
+        console.log("Tela alterada para ROUND_RESULTS");
+        return <RoundResultsScreen />;
+
       case GAME_STATES.GAME_OVER:
+        console.log("Tela alterada para GAME_OVER");
         return <GameOverScreen />;
+
       default:
+        console.log("Tela alterada para INITIAL(default)");
         return <InitialScreen />;
     }
   };

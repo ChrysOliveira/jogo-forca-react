@@ -7,7 +7,7 @@ class SocketManager {
     this.databaseManager = databaseManager;
     this.activeGames = new Map();
     this.socketToGameMap = new Map();
-    
+
     this.setupSocketEvents();
   }
 
@@ -18,13 +18,13 @@ class SocketManager {
 
       //Usuário entra no lobby
       socket.on('join_lobby', (data) => this.handleJoinLobby(socket, data));
-      
+
       //Líder inicia o jogo
       socket.on('start_game', () => this.handleStartGame(socket));
 
       //Usuário envia resposta
-      socket.on('guess_letter', (data) => this.handleSubmitAnswer(socket, data));
-      
+      socket.on('guess_letter', (data) => this.handleGuessLetter(socket, data));
+
       //Desconexão
       socket.on('disconnect', () => this.handleDisconnect(socket));
     });
@@ -56,26 +56,26 @@ class SocketManager {
         console.log(`Jogo criado ${gameId}`)
         //Primeiro jogador torna-se o líder
         isLeader = true;
-        
+
         game = new Game(gameId, this.databaseManager.getDatabase());
         this.activeGames.set(gameId, game);
       }
 
       //Adicionar jogador ao jogo
       const player = await game.addPlayer(socket.id, playerName, isLeader);
-      
+
       //Mapear o ID do socket ao ID do jogo para consulta rápida
       this.socketToGameMap.set(socket.id, gameId);
-      
+
       //Entrar na sala do jogo
       socket.join(`game:${gameId}`);
-      
+
       //Enviar lista atualizada de jogadores para todos no lobby
       this.io.to(`game:${gameId}`).emit('lobby_update', {
         players: game.getPlayersJSON(),
         gameId
       });
-      
+
     } catch (error) {
       console.error('Error ao entrar no lobby:', error);
       socket.emit('error', { message: 'Erro ao entrar no lobby' });
@@ -84,17 +84,18 @@ class SocketManager {
 
   //Tratamento do evento 'start_game'
   async handleStartGame(socket, limit = 5, categorias = null) {
-    console.log("Iniciando jogo")
+    console.log("handleStartGame: Iniciando jogo")
     try {
       const gameId = this.socketToGameMap.get(socket.id);
-      
+
       if (!gameId) {
         socket.emit('error', { message: 'Você não faz parte de nenhum jogo' });
         return;
       }
-      
+
+      /** @type {Game} */
       const game = this.activeGames.get(gameId);
-      
+
       if (!game) {
         socket.emit('error', { message: 'Jogo não encontrado' });
         return;
@@ -105,28 +106,29 @@ class SocketManager {
         socket.emit('error', { message: 'Apenas o líder pode iniciar o jogo' });
         return;
       }
-      
+
       //Buscar palavras do banco de dados
       console.log("Buscando palavras aleatorias do db")
       const palavras = await this.databaseManager.getRandomWords(limit, categorias);
 
       const lista = palavras.map(p => p.palavra).join(', ');
       console.log(`Palavras buscadas: ${lista}`);
-      
+
       //Iniciar o jogo
-      console.log(`Iniciando jogo ${game}`)
+      console.log(`Iniciando jogo ${JSON.stringify(game)}`)
       game.startGame(palavras);
-      
+
       //Iniciar a contagem regressiva
-      this.io.to(`game:${gameId}`).emit('game_starting', { countdown: 3 });
-      
+      const tempoCountdown = 3;
+      this.io.to(`game:${gameId}`).emit('game_starting', { countdown: tempoCountdown });
+
       //Após a contagem regressiva, enviar a primeira pergunta
       setTimeout(() => {
         const state = game.getCurrentState();
-        
+
         this.io.to(`game:${gameId}`).emit('forca_state', state);
-      }, 3000);
-      
+      }, tempoCountdown * 1000);
+
     } catch (error) {
       console.error('Erro ao iniciar o jogo:', error);
       socket.emit('error', { message: 'Erro ao iniciar o jogo' });
@@ -134,15 +136,17 @@ class SocketManager {
   }
 
   async handleGuessLetter(socket, { letter }) {
+    console.log(`SocketManager::handleGuessLetter: Dados recebidos: letter:${letter}`);
     const gameId = this.socketToGameMap.get(socket.id);
-      
+
     if (!gameId) {
       socket.emit('error', { message: 'Você não faz parte de nenhum jogo' });
       return;
     }
-    
+
+    /** @type {Game} */
     const game = this.activeGames.get(gameId);
-    
+
     if (!game || !game.started) {
       socket.emit('error', { message: 'Jogo não encontrado ou não iniciado' });
       return;
@@ -152,8 +156,8 @@ class SocketManager {
 
     this.io.to(`game:${gameId}`).emit('forca_state', state);
 
-    if (roundResult) {
-      this.io.to(`game:${gameId}`).emit('round_end', roundResult);
+    if (roundResult.won) {
+      this.io.to(`game:${gameId}`).emit('round_result', roundResult);
 
       setTimeout(() => {
         const nextState = game.nextRound();
@@ -170,9 +174,9 @@ class SocketManager {
   async handleGameOver(gameId, game) {
     try {
       const finalResult = await game.finishGame();
-      
+
       this.io.to(`game:${gameId}`).emit('game_over', finalResult);
-      
+
       //Remover o jogo após algum tempo para limpar memória
       setTimeout(() => {
         if (this.activeGames.has(gameId)) {
@@ -180,7 +184,7 @@ class SocketManager {
           game.getPlayersJSON().forEach(player => {
             this.socketToGameMap.delete(player.socketId);
           });
-          
+
           this.activeGames.delete(gameId);
         }
       }, 60000); //Remover após 1 minuto
@@ -193,16 +197,16 @@ class SocketManager {
   async handleDisconnect(socket) {
     try {
       console.log('User disconnected:', socket.id);
-      
+
       const gameId = this.socketToGameMap.get(socket.id);
-      
+
       if (gameId) {
         const game = this.activeGames.get(gameId);
-        
+
         if (game) {
           //Remover jogador do jogo
           const players = await game.removePlayer(socket.id);
-          
+
           //Se ainda há jogadores e o jogo não começou, atualizar o lobby
           if (players.length > 0) {
             if (!game.started) {
@@ -216,7 +220,7 @@ class SocketManager {
             this.activeGames.delete(gameId);
           }
         }
-        
+
         //Remover o mapeamento de socket para jogo
         this.socketToGameMap.delete(socket.id);
       }

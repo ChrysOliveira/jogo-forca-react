@@ -18,8 +18,8 @@ export const GAME_STATES = {
   INITIAL: 'INITIAL',
   LOBBY: 'LOBBY',
   COUNTDOWN: 'COUNTDOWN',
-  QUESTION: 'QUESTION',
-  QUESTION_RESULTS: 'QUESTION_RESULTS',
+  WORD: 'WORD',
+  ROUND_RESULTS: 'QUESTION_RESULTS',
   GAME_OVER: 'GAME_OVER',
 };
 
@@ -45,13 +45,13 @@ const initialState = {
 //Ações do jogo
 export const ACTIONS = {
   SET_PLAYER_NAME: 'SET_PLAYER_NAME',
-  JOIN_LOBBY: 'JOIN_LOBBY', 
+  JOIN_LOBBY: 'JOIN_LOBBY',
   UPDATE_LOBBY: 'UPDATE_LOBBY',
   START_COUNTDOWN: 'START_COUNTDOWN',
   UPDATE_COUNTDOWN: 'UPDATE_COUNTDOWN',
-  SHOW_QUESTION: 'SHOW_QUESTION',
+  SHOW_WORD: 'SHOW_WORD',
   SUBMIT_ANSWER: 'SUBMIT_ANSWER',
-  SHOW_QUESTION_RESULTS: 'SHOW_QUESTION_RESULTS',
+  SHOW_ROUND_RESULTS: 'SHOW_ROUND_RESULTS',
   GAME_OVER: 'GAME_OVER',
   SET_ERROR: 'SET_ERROR',
   RESET_GAME: 'RESET_GAME',
@@ -68,7 +68,7 @@ function gameReducer(state, action) {
           name: action.payload,
         },
       };
-    
+
     case ACTIONS.JOIN_LOBBY:
       return {
         ...state,
@@ -78,18 +78,18 @@ function gameReducer(state, action) {
           name: action.payload.playerName,
         },
       };
-    
+
     case ACTIONS.UPDATE_LOBBY:
       //Verificar se este jogador está na lista de jogadores 
       //retornada pelo servidor
       const playerInList = action.payload.players.find(
         p => p.name === state.player.name
       );
-      
+
       console.log('Lobby atualizado, jogadores:', action.payload.players);
       console.log('Nome do jogador atual:', state.player.name);
       console.log('Jogador encontrado na lista?', playerInList ? 'Sim' : 'Não');
-      
+
       return {
         ...state,
         gameId: action.payload.gameId,
@@ -102,6 +102,7 @@ function gameReducer(state, action) {
       };
 
     case ACTIONS.START_COUNTDOWN:
+      console.log("GameReducer: Start Countdown")
       return {
         ...state,
         gameState: GAME_STATES.COUNTDOWN,
@@ -114,14 +115,20 @@ function gameReducer(state, action) {
         countdown: action.payload,
       };
 
-    case ACTIONS.SHOW_QUESTION:
+    case ACTIONS.SHOW_WORD:
       return {
         ...state,
-        gameState: GAME_STATES.QUESTION,
-        currentQuestion: action.payload,
-        questionNumber: action.payload.questionNumber,
-        totalQuestions: action.payload.totalQuestions,
+        gameState: GAME_STATES.WORD,
+        displayWord: action.payload.displayWord,
+        hint: action.payload.hint,
+        category: action.payload.category,
+        wrongLetters: Array.from(action.payload.wrongLetters),
+        correctLetters: Array.from(action.payload.correctLetters),
+        guessedLetters: Array.from(action.payload.guessedLetters),
+        round: action.payload.round,
+        finished: action.payload.finished
       };
+
 
     case ACTIONS.SUBMIT_ANSWER:
       return {
@@ -132,11 +139,11 @@ function gameReducer(state, action) {
         },
       };
 
-    case ACTIONS.SHOW_QUESTION_RESULTS:
+    case ACTIONS.SHOW_ROUND_RESULTS:
       return {
         ...state,
-        gameState: GAME_STATES.QUESTION_RESULTS,
-        questionResults: action.payload,
+        gameState: GAME_STATES.ROUND_RESULTS,
+        roundResults: action.payload,
       };
 
     case ACTIONS.GAME_OVER:
@@ -200,16 +207,17 @@ export const GameProvider = ({ children }) => {
       }, 1000);
     });
 
-    socket.on('question', (data) => {
+    socket.on('forca_state', (data) => {
+      console.log(`GameContext::GameProvider::useEffect::forca_state: Dados recebidos: ${JSON.stringify(data)}`)
       dispatch({
-        type: ACTIONS.SHOW_QUESTION,
+        type: ACTIONS.SHOW_WORD,
         payload: data,
       });
     });
-    
-    socket.on('question_results', (data) => {
+
+    socket.on('round_result', (data) => {
       dispatch({
-        type: ACTIONS.SHOW_QUESTION_RESULTS,
+        type: ACTIONS.SHOW_ROUND_RESULTS,
         payload: data,
       });
     });
@@ -262,7 +270,7 @@ export const GameProvider = ({ children }) => {
       console.error("Conexão do socket não estabelecida");
       return;
     }
-    
+
     if (!socket.connected) {
       console.log("Socket não está conectado ainda, aguardando...");
       socket.on('connect', () => {
@@ -273,7 +281,7 @@ export const GameProvider = ({ children }) => {
       console.log("Socket está conectado, entrando no lobby diretamente");
       socket.emit('join_lobby', { playerName });
     }
-    
+
     dispatch({
       type: ACTIONS.JOIN_LOBBY,
       payload: { playerName },
@@ -287,16 +295,20 @@ export const GameProvider = ({ children }) => {
     }
     socket.emit('start_game');
   };
-  const submitAnswer = (answer, questionId) => {
+
+  const submitAnswer = (letter) => {
     if (!socket) return;
-    
+
     //Garantir que nunca enviamos null para o servidor
-    const safeAnswer = answer || ''; 
-    
-    socket.emit('submit_answer', { answer: safeAnswer, questionId });
+    const safeAnswer = letter || '';
+
+
+    console.log(`GameContext::GameProvider::submitAnswer: Dados enviados: letra:${safeAnswer}`);
+    socket.emit('guess_letter', { letter: safeAnswer });
+
     dispatch({
       type: ACTIONS.SUBMIT_ANSWER,
-      payload: { answer: safeAnswer },
+      payload: { letter: safeAnswer },
     });
   };
 

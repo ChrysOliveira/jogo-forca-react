@@ -1,7 +1,7 @@
 import { useGame } from '../context/GameContext';
 
-const QuestionResultsScreen = () => {
-  const { questionResults, players } = useGame();
+const RoundResultsScreen = () => {
+  const { roundResults } = useGame();
 
   if (!questionResults) return null;
 
@@ -18,18 +18,18 @@ const QuestionResultsScreen = () => {
           Resultado da Pergunta
         </h1>
 
-        <div style={{ 
-          backgroundColor: 'var(--color-surface-light)', 
-          padding: '1rem', 
-          borderRadius: '0.5rem', 
-          marginBottom: '1.5rem' 
+        <div style={{
+          backgroundColor: 'var(--color-surface-light)',
+          padding: '1rem',
+          borderRadius: '0.5rem',
+          marginBottom: '1.5rem'
         }}>
           <h2 className="mb-small">Resposta Correta:</h2>
-          <div style={{ 
-            padding: '0.75rem', 
-            backgroundColor: 'rgba(34, 197, 94, 0.2)', 
-            border: '1px solid var(--color-success)', 
-            borderRadius: '0.5rem' 
+          <div style={{
+            padding: '0.75rem',
+            backgroundColor: 'rgba(34, 197, 94, 0.2)',
+            border: '1px solid var(--color-success)',
+            borderRadius: '0.5rem'
           }}>
             {questionResults.correctAnswer}
           </div>
@@ -38,7 +38,7 @@ const QuestionResultsScreen = () => {
         <h2 className="mb-medium">Respostas dos Jogadores:</h2>
         <div className="mb-large">
           {questionResults.answers.map((answer, index) => (
-            <div 
+            <div
               key={index}
               className={`player-answer ${answer.isCorrect ? 'correct' : 'incorrect'}`}
             >
@@ -74,4 +74,4 @@ const QuestionResultsScreen = () => {
   );
 };
 
-export default QuestionResultsScreen;
+export default RoundResultsScreen;
