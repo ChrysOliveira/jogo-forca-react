@@ -23,7 +23,7 @@ const InitialScreen = () => {
     <div className="screen">
       <div className="card">
         <h1 className="text-4xl font-bold mb-large center-text text-primary">
-          Quiz em Tempo Real
+          Jogo da forca em Tempo Real
         </h1>
 
         <form onSubmit={handleSubmit} className="flex flex-column gap-medium">
@@ -55,7 +55,7 @@ const InitialScreen = () => {
       </div>
 
       <div className="mb-medium text-muted text-small center-text">
-        <p>Entre para participar do quiz e teste seus conhecimentos!</p>
+        <p>Entre para participar do jogo da forca e teste seus conhecimentos!</p>
       </div>
     </div>
   );

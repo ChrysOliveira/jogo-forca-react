@@ -41,7 +41,7 @@ const LobbyScreen = () => {
             style={{ backgroundColor: 'var(--color-success)' }}
             disabled={players.length < 1}
           >
-            Iniciar Quiz!
+            Iniciar Jogo!
           </button>
         ) : (
           <div style={{ 

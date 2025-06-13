@@ -143,15 +143,17 @@ function gameReducer(state, action) {
       return {
         ...state,
         gameState: GAME_STATES.ROUND_RESULTS,
-        roundResults: action.payload,
+        won: action.payload.won,
+        lost: action.payload.lost,
+        playerWin: action.payload.playerWin,
+        fullWord: action.payload.fullWord
       };
 
     case ACTIONS.GAME_OVER:
       return {
         ...state,
         gameState: GAME_STATES.GAME_OVER,
-        finalScores: action.payload.finalScores,
-        detailedResults: action.payload.detailedResults,
+        finalScores: Array.from(action.payload.finalScores),
       };
 
     case ACTIONS.SET_ERROR:

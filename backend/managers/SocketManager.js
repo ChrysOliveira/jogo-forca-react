@@ -171,6 +171,10 @@ class SocketManager {
   }
 
   //Lidar com o fim do jogo
+  /**
+   * Função que processa um nome de usuário.
+   * @param {Game} game - O nome do usuário a ser processado.
+   */
   async handleGameOver(gameId, game) {
     try {
       const finalResult = await game.finishGame();

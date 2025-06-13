@@ -168,6 +168,7 @@ class Game {
     let roundResult = {
       won: false,
       lost: false,
+      playerWin: "Chrystian", //TODO: deixar dinamico quando implementar o multiplayer
       fullWord: ""
     };
 
@@ -201,53 +202,53 @@ class Game {
   }
 
   //Calcular pontuações quando todos responderam
-  async calculateScores() {
-    try {
-      const currentQuestion = this.questions[this.currentQuestion];
-
-      //Calcular pontos para respostas corretas
-      //Ordenar por tempo de resposta (mais rápido recebe mais pontos)
-      const correctAnswers = this.playerAnswers
-        .filter(pa => pa.isCorrect)
-        .sort((a, b) => a.responseTime - b.responseTime);
-
-      //Atribuir pontos: 100 para o mais rápido, diminuindo 10 por posição
-      correctAnswers.forEach(async (pa, index) => {
-        const points = Math.max(100 - (index * 10), 10); // Mínimo de 10 pontos
-
-        //Atualizar pontuação do jogador
-        const player = this.players.find(p => p.id === pa.playerId);
-        if (player) {
-          player.addPoints(points);
-        }
-
-        //Atualizar pontos no registro de resposta
-        pa.points = points;
-
-        //Atualizar pontos no banco de dados
-        await this.db.run(
-          'UPDATE player_answers SET points = ? WHERE player_id = ? AND question_id = ?',
-          points, pa.playerId, currentQuestion.id
-        );
-      });
-
-      //Salvar os resultados para o placar final
-      this.results.push({
-        questionId: currentQuestion.id,
-        question: currentQuestion.question,
-        correctAnswer: currentQuestion.correct_answer,
-        playerAnswers: [...this.playerAnswers]
-      });
-
-      return {
-        answers: this.playerAnswers,
-        correctAnswer: currentQuestion.correct_answer
-      };
-    } catch (error) {
-      console.error('Error calculating scores:', error);
-      throw error;
-    }
-  }
+  // async calculateScores() {
+  //   try {
+  //     const currentQuestion = this.questions[this.currentQuestion];
+  //
+  //     //Calcular pontos para respostas corretas
+  //     //Ordenar por tempo de resposta (mais rápido recebe mais pontos)
+  //     const correctAnswers = this.playerAnswers
+  //       .filter(pa => pa.isCorrect)
+  //       .sort((a, b) => a.responseTime - b.responseTime);
+  //
+  //     //Atribuir pontos: 100 para o mais rápido, diminuindo 10 por posição
+  //     correctAnswers.forEach(async (pa, index) => {
+  //       const points = Math.max(100 - (index * 10), 10); // Mínimo de 10 pontos
+  //
+  //       //Atualizar pontuação do jogador
+  //       const player = this.players.find(p => p.id === pa.playerId);
+  //       if (player) {
+  //         player.addPoints(points);
+  //       }
+  //
+  //       //Atualizar pontos no registro de resposta
+  //       pa.points = points;
+  //
+  //       //Atualizar pontos no banco de dados
+  //       await this.db.run(
+  //         'UPDATE player_answers SET points = ? WHERE player_id = ? AND question_id = ?',
+  //         points, pa.playerId, currentQuestion.id
+  //       );
+  //     });
+  //
+  //     //Salvar os resultados para o placar final
+  //     this.results.push({
+  //       questionId: currentQuestion.id,
+  //       question: currentQuestion.question,
+  //       correctAnswer: currentQuestion.correct_answer,
+  //       playerAnswers: [...this.playerAnswers]
+  //     });
+  //
+  //     return {
+  //       answers: this.playerAnswers,
+  //       correctAnswer: currentQuestion.correct_answer
+  //     };
+  //   } catch (error) {
+  //     console.error('Error calculating scores:', error);
+  //     throw error;
+  //   }
+  // }
 
   //Finalizar o jogo e retornar resultados finais
   async finishGame() {
@@ -272,7 +273,6 @@ class Game {
 
       return {
         finalScores,
-        detailedResults: this.results
       };
     } catch (error) {
       console.error('Error finishing game:', error);
