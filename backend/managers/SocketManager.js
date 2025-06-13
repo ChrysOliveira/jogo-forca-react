@@ -167,7 +167,7 @@ class SocketManager {
           this.handleGameOver(gameId, game);
         }
       }, 3000);
-    } else if(roundResult.playersLost) {
+    } else if(roundResult.lost) {
       this.io.to(`game:${gameId}`).emit('round_result', roundResult);
 
       setTimeout(() => {

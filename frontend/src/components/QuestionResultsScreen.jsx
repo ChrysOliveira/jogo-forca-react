@@ -12,6 +12,19 @@ const RoundResultsScreen = () => {
   // Exibe apenas quando o jogo terminar (vitória ou derrota)
   if (!won && !lost) return null;
 
+  const wordStyle = {
+    padding: '0.75rem',
+    backgroundColor: won
+      ? 'rgba(34, 197, 94, 0.2)'
+      : lost
+      ? 'rgba(220, 38, 38, 0.2)'
+      : 'transparent',
+    border: `1px solid ${
+      won ? 'var(--color-success)' : lost ? 'var(--color-error)' : 'transparent'
+    }`,
+    borderRadius: '0.5rem',
+  };
+
   return (
     <div className="screen">
       <div className="card" style={{ maxWidth: '42rem' }}>
@@ -26,14 +39,7 @@ const RoundResultsScreen = () => {
           marginBottom: '1.5rem'
         }}>
           <h2 className="mb-small">Palavra:</h2>
-          <div style={{
-            padding: '0.75rem',
-            backgroundColor: 'rgba(34, 197, 94, 0.2)',
-            border: '1px solid var(--color-success)',
-            borderRadius: '0.5rem'
-          }}>
-            {fullWord}
-          </div>
+          <div style={wordStyle}>{fullWord}</div>
         </div>
 
         <h2 className="mb-medium">Vencedor:</h2>

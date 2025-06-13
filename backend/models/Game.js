@@ -186,10 +186,9 @@ class Game {
 
     let roundResult = {
       won: false,
-      lost: false,
+      lost: this.finishRound(),
       playerWin: "Ninguem acertou essa rodada",
-      fullWord: palavra,
-      playersLost: this.finishRound()
+      fullWord: palavra
     };
 
     if (isWon) {
@@ -202,7 +201,6 @@ class Game {
 
       roundResult.playerWin = player.name
       roundResult.won = true;
-      roundResult.fullWord = palavra;
     }
 
     return {
