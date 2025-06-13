@@ -9,9 +9,9 @@ class Game {
     this.currentRound = 0;
     this.words = [];
     this.roundsWinners = [];
-    this.guessedLetters = new Set();
-    this.wrongLetters = new Set();
-    this.correctLetters = new Set();
+
+    this.playerStates = new Map()
+
     this.maxWrongAttempts = 6;
     this.db = db;
   }
@@ -28,6 +28,14 @@ class Game {
       const player = new Player(playerId, socketId, playerName, isLeader);
       this.players.push(player);
 
+      this.playerStates.set(socketId, {
+        guessedLetters: new Set(),
+        correctLetters: new Set(),
+        wrongLetters: new Set(),
+      })
+
+      console.log(`Adicionei os estados: ${this.playerStates.guessedLetters}\n${this.playerStates.correctLetters}\n${this.playerStates.wrongLetters}`)
+
       return player;
     } catch (error) {
       console.error('Erro ao adicionar jogador ao jogo:', error);
@@ -39,6 +47,7 @@ class Game {
   async removePlayer(socketId) {
     try {
       this.players = this.players.filter(p => p.socketId !== socketId);
+      this.playerStates.delete(socketId);
 
       // Se o líder saiu, escolha um novo líder
       if (this.players.length > 0) {
@@ -73,15 +82,20 @@ class Game {
   }
 
   _initRound() {
-    this.guessedLetters.clear();
-    this.correctLetters.clear()
-    this.wrongLetters.clear();
+    for (const state of this.playerStates.values()) {
+      state.guessedLetters.clear();
+      state.correctLetters.clear();
+      state.wrongLetters.clear();
+    }
   }
 
-  getCurrentState() {
+  getCurrentState(socketId) {
     console.log("getCurrentState:: Enviando estado atual");
 
     if (!this.started || !this.words[this.currentRound]) return null;
+    
+    const state = this.playerStates.get(socketId);
+    if (!state) return null;
 
     const { palavra, dica, categoria } = this.words[this.currentRound];
     console.log(`getCurrentState:: Palavra atual: ${palavra}`)
@@ -91,12 +105,12 @@ class Game {
     // monta a string com underscores e letras já chutadas
     const display = palavra
       .split('')
-      .map(ch => (ch === ' ' ? ' ' : (this.guessedLetters.has(ch) ? ch : '_')))
+      .map(ch => (ch === ' ' ? ' ' : (state.guessedLetters.has(ch) ? ch : '_')))
       .join('');
 
     console.log(`getCurrentState:: Display atual: ${display}`)
 
-    const finished = this.verificaLetras(this.guessedLetters, palavra);
+    const finished = this.verificaLetras(state.guessedLetters, palavra);
 
     console.log(`getCurrentState:: Finished?: ${finished}`)
 
@@ -106,15 +120,15 @@ class Game {
       hint: dica,
       category: categoria,
       displayWord: display,
-      wrongLetters: Array.from(this.wrongLetters),
-      correctLetters: Array.from(this.correctLetters),
-      guessedLetters: Array.from(this.guessedLetters),
-      finished: finished || this.verificaSePerdeu(this.wrongLetters)
+      wrongLetters: Array.from(state.wrongLetters),
+      correctLetters: Array.from(state.correctLetters),
+      guessedLetters: Array.from(state.guessedLetters),
+      finished: finished || this.verificaSePerdeu(state.wrongLetters)
     };
   }
 
   verificaSePerdeu = (wrongLetters) => {
-    const total = this.wrongLetters.size;
+    const total = wrongLetters.size;
     console.log(`Total de erros: ${total}`)
 
     if (total >= this.maxWrongAttempts) return true;
@@ -143,52 +157,63 @@ class Game {
   //Registrar resposta de um jogador
   async guessLetter(socket, letter) {
     letter = letter.toUpperCase();
+    const state = this.playerStates.get(socket.id)
 
-    if (this.guessedLetters.has(letter)) {
+    if (!state) 
+      return { error: 'Jogador não encontrado' };
+
+    if (state.guessedLetters.has(letter)) {
       return { error: 'Letra já chutada' };
     }
-    this.guessedLetters.add(letter);
+
+    state.guessedLetters.add(letter);
 
     const palavra = this.words[this.currentRound].palavra;
 
     if (!palavra.includes(letter)) {
-      this.wrongLetters.add(letter);
+      state.wrongLetters.add(letter);
     } else {
-      this.correctLetters.add(letter);
+      state.correctLetters.add(letter);
     }
 
     // Verifica vitória ou derrota do round
     const isWon = palavra
       .split('')
-      .every(ch => ch === ' ' || this.guessedLetters.has(ch));
+      .every(ch => ch === ' ' || state.guessedLetters.has(ch));
 
     //TODO: validar o fluxo de derrota
-    const isLost = this.wrongLetters.size >= this.maxWrongAttempts;
+    const isLost = state.wrongLetters.size >= this.maxWrongAttempts;
 
     let roundResult = {
       won: false,
       lost: false,
-      playerWin: "Chrystian", //TODO: deixar dinamico quando implementar o multiplayer
-      fullWord: ""
+      playerWin: "", //TODO: deixar dinamico quando implementar o multiplayer
+      fullWord: "",
+      playerLost: this.playerStates.forEach((value) => {
+        
+      })
     };
 
     if (isWon) {
       // registra vencedor (no empate de derrota, ninguém ganha o ponto)
+      
+      /** @type {Player} */
       const player = this.players.find(p => p.socketId === socket.id);
       this.roundsWinners.push(player?.id || null);
       player?.addPoints(1);
 
+      roundResult.playerWin = player.name
       roundResult.won = true;
       roundResult.fullWord = palavra;
     }
 
     return {
-      state: this.getCurrentState(),
+      state: this.getCurrentState(socket.id),
       roundResult
     };
   }
 
-  nextRound() {
+  nextRound(socketId) {
     if (!this.started)
       return null;
 
@@ -196,7 +221,7 @@ class Game {
 
     if (this.currentRound < this.words.length) {
       this._initRound();
-      return this.getCurrentState();
+      return this.getCurrentState(socketId);
     }
     return null;
   }

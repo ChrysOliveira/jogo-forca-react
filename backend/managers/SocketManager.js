@@ -124,7 +124,7 @@ class SocketManager {
 
       //Após a contagem regressiva, enviar a primeira pergunta
       setTimeout(() => {
-        const state = game.getCurrentState();
+        const state = game.getCurrentState(socket.id);
 
         this.io.to(`game:${gameId}`).emit('forca_state', state);
       }, tempoCountdown * 1000);
@@ -154,20 +154,22 @@ class SocketManager {
 
     const { state, roundResult } = await game.guessLetter(socket, letter);
 
-    this.io.to(`game:${gameId}`).emit('forca_state', state);
+    socket.emit('forca_state', state);
 
     if (roundResult.won) {
       this.io.to(`game:${gameId}`).emit('round_result', roundResult);
 
       setTimeout(() => {
-        const nextState = game.nextRound();
+        const nextState = game.nextRound(socket.id);
         if (nextState) {
           this.io.to(`game:${gameId}`).emit('forca_state', nextState);
         } else {
           this.handleGameOver(gameId, game);
         }
       }, 3000);
-    }
+    } else {
+      
+    } 
   }
 
   //Lidar com o fim do jogo
