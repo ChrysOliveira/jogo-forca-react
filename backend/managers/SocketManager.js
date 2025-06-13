@@ -167,8 +167,17 @@ class SocketManager {
           this.handleGameOver(gameId, game);
         }
       }, 3000);
-    } else {
-      
+    } else if(roundResult.playersLost) {
+      this.io.to(`game:${gameId}`).emit('round_result', roundResult);
+
+      setTimeout(() => {
+        const nextState = game.nextRound(socket.id);
+        if (nextState) {
+          this.io.to(`game:${gameId}`).emit('forca_state', nextState);
+        } else {
+          this.handleGameOver(gameId, game);
+        }
+      }, 3000);
     } 
   }
 

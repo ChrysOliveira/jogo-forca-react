@@ -187,11 +187,9 @@ class Game {
     let roundResult = {
       won: false,
       lost: false,
-      playerWin: "", //TODO: deixar dinamico quando implementar o multiplayer
-      fullWord: "",
-      playerLost: this.playerStates.forEach((value) => {
-        
-      })
+      playerWin: "Ninguem acertou essa rodada",
+      fullWord: palavra,
+      playersLost: this.finishRound()
     };
 
     if (isWon) {
@@ -274,6 +272,12 @@ class Game {
   //     throw error;
   //   }
   // }
+
+  finishRound() {
+    const answer = Array.from(this.playerStates.values()).every(p => p.wrongLetters.size >= this.maxWrongAttempts)
+    console.log(`Valor de answer: ${answer} - ${JSON.stringify(this.playerStates.values)}`)
+    return answer
+  }
 
   //Finalizar o jogo e retornar resultados finais
   async finishGame() {
