@@ -10,8 +10,8 @@ export const useGame = () => useContext(GameContext);
  * - INITIAL: Estado inicial, antes de entrar no lobby
  * - LOBBY: Lobby do jogo, onde os jogadores podem entrar
  * - COUNTDOWN: Contagem regressiva antes do início do jogo
- * - QUESTION: Estado em que uma pergunta é exibida
- * - QUESTION_RESULTS: Estado em que os resultados da pergunta são exibidos
+ * - WORD: Estado em que uma pergunta é exibida
+ * - ROUND_RESULTS: Estado em que os resultados da pergunta são exibidos
  * - GAME_OVER: Estado em que o jogo termina
  */
 export const GAME_STATES = {
@@ -19,7 +19,7 @@ export const GAME_STATES = {
   LOBBY: 'LOBBY',
   COUNTDOWN: 'COUNTDOWN',
   WORD: 'WORD',
-  ROUND_RESULTS: 'QUESTION_RESULTS',
+  ROUND_RESULTS: 'ROUND_RESULTS',
   GAME_OVER: 'GAME_OVER',
 };
 
@@ -32,11 +32,11 @@ const initialState = {
   },
   gameId: null,
   players: [],
-  currentQuestion: null,
-  questionNumber: 0,
-  totalQuestions: 0,
+  currentWord: null,
+  wordNumber: 0,
+  totalWords: 0,
   countdown: 0,
-  questionResults: null,
+  roundResults: null,
   finalScores: null,
   detailedResults: null,
   error: null,
@@ -133,8 +133,8 @@ function gameReducer(state, action) {
     case ACTIONS.SUBMIT_ANSWER:
       return {
         ...state,
-        currentQuestion: {
-          ...state.currentQuestion,
+        currentWord: {
+          ...state.currentWord,
           userAnswer: action.payload.answer,
         },
       };
@@ -241,8 +241,8 @@ export const GameProvider = ({ children }) => {
     return () => {
       socket.off('lobby_update');
       socket.off('game_starting');
-      socket.off('question');
-      socket.off('question_results');
+      socket.off('word');
+      socket.off('round_results');
       socket.off('game_over');
       socket.off('error');
     };

@@ -21,43 +21,8 @@ const hangmanSprites = [
 
 const WordScreen = () => {
   const { hint, category, displayWord, wrongLetters, correctLetters, guessedLetters, round, finished, submitAnswer } = useGame();
-  const [timeLeft, setTimeLeft] = useState(60);
-  const timerRef = useRef(null);
 
   console.log(`WordScreen::WordScreen: Dados recebidos from useGame():\ndisplayWord: ${displayWord}, \nwrongLetters: ${wrongLetters}, \ncorrectLetters: ${correctLetters}, \nguessedLetters: ${guessedLetters}, \nround: ${round}, \nfinished: ${finished}\n`);
-
-  // Tempo do round
-  // useEffect(() => {
-  //   timerRef.current = setInterval(() => {
-  //     setTimeLeft((prevTime) => {
-  //       if (prevTime <= 1) {
-  //         clearInterval(timerRef.current);
-  //         return 0;
-  //       }
-  //       return prevTime - 1;
-  //     });
-  //   }, 1000);
-  //
-  //   return () => {
-  //     if (timerRef.current) clearInterval(timerRef.current);
-  //   };
-  // }, [round]);
-
-  // useEffect(() => {
-  //   if (finished && timerRef.current) {
-  //     clearInterval(timerRef.current);
-  //   }
-  // }, [finished]);
-
-  // useEffect(() => {
-  //   if (timeLeft === 0 && !finished) {
-  //     console.log('Tempo esgotado! Enviando resposta vazia.');
-  //
-  //     setTimeout(() => {
-  //       submitAnswer(guessedLetters, round);
-  //     }, 10);
-  //   }
-  // }, [timeLeft, finished, round, submitAnswer, guessedLetters]);
 
   const handleLetterSubmit = (letter) => {
     if (finished) return;

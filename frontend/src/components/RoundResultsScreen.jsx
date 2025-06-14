@@ -3,12 +3,6 @@ import { useGame } from '../context/GameContext';
 const RoundResultsScreen = () => {
   const { won, lost, playerWin, fullWord } = useGame();
 
-  // Get the player names from players array
-  // const getPlayerName = (playerId) => {
-  //   const player = players.find((p) => p.id === playerId);
-  //   return player ? player.name : 'Unknown Player';
-  // };
-
   // Exibe apenas quando o jogo terminar (vitória ou derrota)
   if (!won && !lost) return null;
 
